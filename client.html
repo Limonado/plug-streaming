@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <title>HLS Player</title>
+    <style>
+      video {
+          background-color: black;
+          margin: 0 auto;
+          width: 50%;
+          height: 50%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="auth">
+      clique aqui para login
+      <button type="button" onclick="closeAuth()">LOGIN</button>
+    </div>
+    <video id="video" width="500" height="500" autoPlay muted></video>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script>
+      function closeAuth() {
+        document.getElementById('auth').remove();
+        login();
+      }
+      function login() {
+        //document.getElementById('video').muted = true;
+        const socket = io("http://localhost:3000/");
+        socket.on('uptime', (time) => {
+          var item = document.createElement("li");
+          item.textContent = time;
+          document.getElementById('playlist').appendChild(item);
+        });
+        socket.on('updatePlaylist', (data, ind) => {
+          document.getElementById('playlist').innerHTML = '';
+          for (var i=0; i<data.length; i++) {
+            var item = document.createElement("li");
+            item.textContent = data[i].ownerChannelName+' -- '+data[i].title;
+            document.getElementById('playlist').appendChild(item);
+          }
+        });
+        socket.on("play", (videoSrc, time, ind) => {
+          const video = document.getElementById('video');
+          if (Hls.isSupported()) {
+            const hls = new Hls({
+                autoStartLoad: true,
+                startPosition: time,
+                debug: false
+            });
+            hls.loadSource(videoSrc);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              video.play();
+            });
+          }else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = videoSrc;
+            video.addEventListener('loadedmetadata', () => {
+              video.play();
+            });
+          }
+          video.muted = false;
+          video.currentTime = time/1000;
+        });
+      };
+      
+
+    function formSubmit(e){
+      $.ajax({
+          type: "POST",
+          url: '/addvideo',
+          data: { url: document.getElementById('data').value },
+          success: function (data) {
+
+          },
+          error: function (data) {
+              console.log('An error occurred.');
+              console.log(data);
+          }
+      });
+      document.getElementById('data').value = "";
+    }
+
+    function getPlaylist() {
+      $.get("/getplaylist", function(data) {
+        document.getElementById('playlist').innerHTML = '';
+        for (var i=0; i<data.length; i++) {
+          var item = document.createElement("li");
+          item.textContent = data[i].ownerChannelName+' -- '+data[i].title;
+          document.getElementById('playlist').appendChild(item);
+        }
+      });
+    }
+    </script>
+
+    <form onsubmit="formSubmit()">
+      <input type="text" id='data'>
+      <button type="button" onclick="formSubmit()">Send</button>
+    </form>
+
+    <h2>PLAYLIST</h2>
+    <ul id='playlist'>
+
+    </ul>
+    https://www.youtube.com/watch?v=EtrodNQKZ8I
+  </body>
+
+</html>
