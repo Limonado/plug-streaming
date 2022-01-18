@@ -1,36 +1,71 @@
 <!DOCTYPE html>
 <html>
 
-  <head>
-    <meta charset="utf-8">
-    <title>HLS Player</title>
-    <style>
-      video {
-          background-color: black;
-          margin: 0 auto;
-          width: 50%;
-          height: 50%;
-      }
-    </style>
-  </head>
+<head>
+	<meta charset="utf-8">
+	<title>HLS Player</title>
+	<style>
 
-  <body>
-    <div id="auth">
-      clique aqui para login
-      <button type="button" onclick="closeAuth()">LOGIN</button>
+		video {
+			background-color: black;
+			//margin: 0 auto;
+			width: 40%;
+			height: 20%;
+		}
+
+		.video-progress {
+			right: 0; 
+			bottom: 0;
+			min-width: 100%; 
+			min-height: 100%;
+			width: auto; 
+			height: auto; 
+			z-index: -100;
+			background-size: cover;
+			overflow: hidden;
+		}
+
+		progress[value] {
+			appearance: none;
+			border: none;
+			margin-bottom: 7px;
+			width:40%;
+			height:10px;
+		}
+	
+		#video-submit {
+			width: 40%;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="auth">
+		clique aqui para login
+		<button type="button" onclick="closeAuth()">LOGIN</button>
     </div>
-    <video id="video" width="500" height="500" autoPlay muted></video>
+    
+		<div class="video-progress">
+			<video id="video" autoPlay muted></video>
+			<br>
+			<progress id="progress-bar" value="0" min="0"></progress>
+		</div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script>
+			const progressBar = document.getElementById('progress-bar');
+			const video = document.getElementById('video');
+			function updateProgress() {
+				progressBar.value = Math.floor(video.currentTime);
+			}
       function closeAuth() {
         document.getElementById('auth').remove();
         login();
       }
       function login() {
         //document.getElementById('video').muted = true;
-        const socket = io("http://localhost:3000/");
+        const socket = io();
         socket.on('uptime', (time) => {
           var item = document.createElement("li");
           item.textContent = time;
@@ -44,14 +79,16 @@
             document.getElementById('playlist').appendChild(item);
           }
         });
-        socket.on("play", (videoSrc, time, ind) => {
-          const video = document.getElementById('video');
+        socket.on("play", (videoSrc, time, ind, duration) => {
+					if (ind > 0) { document.getElementById('playlist').removeChild(0); }
+          
           if (Hls.isSupported()) {
             const hls = new Hls({
-                autoStartLoad: true,
-                startPosition: time,
-                debug: false
+							autoStartLoad: true,
+							startPosition: time,
+							debug: false
             });
+						progressBar.setAttribute('max', duration);
             hls.loadSource(videoSrc);
             hls.attachMedia(video);
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -63,6 +100,8 @@
               video.play();
             });
           }
+					
+					video.addEventListener('timeupdate', updateProgress);
           video.muted = false;
           video.currentTime = time/1000;
         });
@@ -97,11 +136,12 @@
     }
     </script>
 
+		<div id='video-submit'>
     <form onsubmit="formSubmit()">
       <input type="text" id='data'>
       <button type="button" onclick="formSubmit()">Send</button>
     </form>
-
+		</div>
     <h2>PLAYLIST</h2>
     <ul id='playlist'>
 
