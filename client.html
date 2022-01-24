@@ -3,40 +3,124 @@
 
 <head>
 	<meta charset="utf-8">
-	<title>HLS Player</title>
+	<title>plug.bootleg</title>
+
 	<style>
+
+
 
 		video {
 			background-color: black;
-			//margin: 0 auto;
-			width: 40%;
-			height: 20%;
+			width: 43.5%;
+			height: 5%;
+			margin-top: 15px;
+			max-block-size: 380px;
+			border: 3px solid #000000;
+			border-radius: 5px;
 		}
 
-		.video-progress {
-			right: 0; 
-			bottom: 0;
-			min-width: 100%; 
-			min-height: 100%;
-			width: auto; 
-			height: auto; 
-			z-index: -100;
-			background-size: cover;
-			overflow: hidden;
+
+		.chatbox {
+			border: 3px solid #000000;
+			width: 55%;
+			height: 92%;
+			left: 50%;
+			top: 55px;
+			position: absolute;
+			transform: translate(-10.5%, 0%);
+			background-color: grey;
 		}
 
 		progress[value] {
 			appearance: none;
 			border: none;
 			margin-bottom: 7px;
-			width:40%;
+			width:43.2%;
+			transform: translate(5px, -12px);
 			height:10px;
 		}
 	
-		#video-submit {
-			width: 40%;
+		#data {
+			width: 33%;
+			height: 30px;
+			font-size: 27px;
 		}
+
+		.submitbutton {
+			width: 10%;
+			height: 35px;
+			transform: translate(-5px, -5px);
+			border-radius: 5px;
+		}
+
+		#submitform {
+			margin-top: -15px;
+			text-align: center;
+			transform: translate(-28%, 0px);
+		}
+
+	#playlist {
+		word-wrap: break-word;
+		width: 40%;
+	}
+	.roominfo {
+    background-color: black;
+		color: white;
+		transform: translate(0px, 0px);
+		text-align: center;
+		display: flex;
+	}
+body{
+  background:#CCC;
+}
+
+body,
+div,
+ul,
+li,
+p {
+  font-family: verdana;
+  font-size: 16pt;
+}
+.tickerwrapper {
+  /* the outer div */
+  
+  position: relative;
+  top: 3px;
+  left:0%;
+  border: 1px solid #444;
+  background: #fff;
+  width: 99.9%;
+  height: 30px;
+  overflow: hidden;
+}
+
+ul.list {
+  position: relative;
+  display: inline-block;
+  list-style: none;
+  padding:0;
+  margin:0;
+}
+
+ul.list.cloned {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+
+ul.list li {
+  float: left;
+  padding-left: 20px;
+}
+	
+	
 	</style>
+		<script src="/socket.io/socket.io.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js" type="text/javascript"></script>
 </head>
 
 <body>
@@ -44,16 +128,69 @@
 		clique aqui para login
 		<button type="button" onclick="closeAuth()">LOGIN</button>
     </div>
-    
+
+		<div class="tickerwrapper">
+			<ul class='list'>
+				<li class='listitem'>
+					<span class="scrolltext">This is list item 1</span>
+				</li>
+			</ul>
+		</div>
+			
 		<div class="video-progress">
 			<video id="video" autoPlay muted></video>
 			<br>
-			<progress id="progress-bar" value="0" min="0"></progress>
+			<progress id="progress-bar" value="0" min="0" max="1000"></progress>
+			<br>
+			<form id="submitform" onsubmit="formSubmit()">
+				Submit your video:
+				<br>
+				<input type="text" id='data'>
+				<button class='submitbutton' type="button" onclick="formSubmit()">Submit</button>
+			</form>
 		</div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+
+
     <script>
+			
+
+			var $tickerWrapper = $(".tickerwrapper");
+			var $list = $tickerWrapper.find("ul.list");
+			var $clonedList = $list.clone();
+			var listWidth = window.innerWidth;
+
+			var endPos = $tickerWrapper.width() - listWidth;
+
+			$clonedList.addClass("cloned").appendTo($tickerWrapper);
+
+			//TimelineMax
+			var infinite = new TimelineMax({repeat: -1, paused: true});
+			var time = 20;
+
+			infinite
+				.fromTo($list, time, {rotation:0.01,x:0}, {force3D:true, x: -listWidth, ease: Linear.easeNone}, 0)
+				.fromTo($clonedList, time, {rotation:0.01, x:listWidth}, {force3D:true, x:0, ease: Linear.easeNone}, 0)
+				.set($list, {force3D:true, rotation:0.01, x: listWidth})
+				.to($clonedList, time, {force3D:true, rotation:0.01, x: -listWidth, ease: Linear.easeNone}, time)
+				.to($list, time, {force3D:true, rotation:0.01, x: 0, ease: Linear.easeNone}, time)
+				.progress(1).progress(0)
+				.play();
+
+			window.addEventListener('resize', function(event){
+				infinite = new TimelineMax({repeat: -1, paused: true});
+				listWidth = window.innerWidth;
+				endPos = $tickerWrapper.width() - listWidth;
+				infinite
+				.fromTo($list, time, {rotation:0.01,x:0}, {force3D:true, x: -listWidth, ease: Linear.easeNone}, 0)
+				.fromTo($clonedList, time, {rotation:0.01, x:listWidth}, {force3D:true, x:0, ease: Linear.easeNone}, 0)
+				.set($list, {force3D:true, rotation:0.01, x: listWidth})
+				.to($clonedList, time, {force3D:true, rotation:0.01, x: -listWidth, ease: Linear.easeNone}, time)
+				.to($list, time, {force3D:true, rotation:0.01, x: 0, ease: Linear.easeNone}, time)
+				.progress(1).progress(0)
+				.play();
+			});
+
+
 			const progressBar = document.getElementById('progress-bar');
 			const video = document.getElementById('video');
 			function updateProgress() {
@@ -79,35 +216,42 @@
             document.getElementById('playlist').appendChild(item);
           }
         });
-        socket.on("play", (videoSrc, time, ind, duration) => {
-					if (ind > 0) { document.getElementById('playlist').removeChild(0); }
-          
-          if (Hls.isSupported()) {
+        socket.on("play", (videoSrc, time, ind, duration, vid) => {
+					var elements = document.getElementsByClassName("scrolltext");
+					for(var i = 0; i < elements.length; i++) {
+						elements[i].innerHTML = "Now playing: "+vid.title;
+					}
+					if (Hls.isSupported()) {
             const hls = new Hls({
 							autoStartLoad: true,
 							startPosition: time,
 							debug: false
             });
-						progressBar.setAttribute('max', duration);
+						
             hls.loadSource(videoSrc);
             hls.attachMedia(video);
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
               video.play();
+							video.addEventListener('timeupdate', updateProgress);
+          		video.muted = false;
+          		video.currentTime = time/1000;
+							progressBar.setAttribute('max', duration);
             });
           }else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = videoSrc;
             video.addEventListener('loadedmetadata', () => {
               video.play();
+							video.addEventListener('timeupdate', updateProgress);
+							video.muted = false;
+							video.currentTime = time/1000;
+							progressBar.setAttribute('max', duration);
             });
           }
 					
-					video.addEventListener('timeupdate', updateProgress);
-          video.muted = false;
-          video.currentTime = time/1000;
+
         });
       };
       
-
     function formSubmit(e){
       $.ajax({
           type: "POST",
@@ -136,17 +280,17 @@
     }
     </script>
 
-		<div id='video-submit'>
-    <form onsubmit="formSubmit()">
-      <input type="text" id='data'>
-      <button type="button" onclick="formSubmit()">Send</button>
-    </form>
-		</div>
+
     <h2>PLAYLIST</h2>
     <ul id='playlist'>
-
     </ul>
-    https://www.youtube.com/watch?v=EtrodNQKZ8I
+
+		<div class='chatbox'>
+			<div class='roominfo'> 
+				<h4>Chatroom</h4>
+				<h4>Online: 1<h4>
+			<div>
+		</div>
   </body>
 
 </html>
